@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Hawker Kaki — SG Food Picks</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{--red:#c0392b;--gold:#e67e22;--cream:#fdf6ec;--dark:#1a0f0a;--mid:#3d2314;--light:#8b5e3c;--border:#e8d5c0;--green:#27ae60;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--cream);color:var(--dark);font-family:'DM Sans',sans-serif;min-height:100vh;}
+.hero{background:var(--dark);padding:40px 24px 32px;text-align:center;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,transparent,transparent 40px,rgba(255,255,255,0.01) 40px,rgba(255,255,255,0.01) 80px);}
+.hero-kicker{font-size:11px;letter-spacing:5px;text-transform:uppercase;color:var(--gold);margin-bottom:10px;opacity:.9;}
+.hero-title{font-family:'Playfair Display',serif;font-size:clamp(36px,7vw,64px);font-weight:900;color:#fff;line-height:1.05;margin-bottom:10px;text-shadow:2px 2px 0 var(--red);}
+.hero-title span{color:var(--gold);}
+.hero-sub{font-size:15px;color:rgba(255,255,255,.55);max-width:480px;margin:0 auto 24px;line-height:1.6;}
+.hero-tabs{display:flex;justify-content:center;border:1px solid rgba(255,255,255,.15);overflow:hidden;width:fit-content;margin:0 auto;}
+.tab-btn{background:transparent;border:none;color:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;letter-spacing:1px;padding:10px 24px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.tab-btn.active{background:var(--red);color:#fff;}
+.tab-btn:hover:not(.active){background:rgba(255,255,255,.08);color:#fff;}
+.panel{display:none;max-width:900px;margin:0 auto;padding:36px 20px 60px;}
+.panel.active{display:block;}
+.form-card{background:#fff;border:1px solid var(--border);padding:32px;box-shadow:0 4px 24px rgba(0,0,0,.06);}
+.form-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--dark);margin-bottom:6px;}
+.form-sub{font-size:14px;color:var(--light);margin-bottom:28px;}
+.field{margin-bottom:20px;}
+.field label{display:block;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--mid);margin-bottom:7px;}
+.field label span{color:var(--red);}
+.field input,.field select,.field textarea{width:100%;padding:11px 14px;border:1.5px solid var(--border);background:var(--cream);color:var(--dark);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;transition:border-color .2s;-webkit-appearance:none;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--red);background:#fff;}
+.field textarea{resize:vertical;min-height:80px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:540px){.field-row{grid-template-columns:1fr;}}
+.stars-wrap{display:flex;gap:6px;align-items:center;}
+.star-btn{font-size:28px;background:none;border:none;cursor:pointer;transition:transform .1s;line-height:1;padding:2px;filter:grayscale(1) opacity(.3);}
+.star-btn.lit{filter:none;}
+.star-btn:hover{transform:scale(1.2);}
+.star-label{font-size:13px;color:var(--light);margin-left:6px;}
+.date-toggle{display:flex;align-items:center;gap:12px;padding:14px 18px;border:1.5px solid var(--border);background:var(--cream);cursor:pointer;transition:all .2s;user-select:none;}
+.date-toggle.on{border-color:var(--red);background:#fff5f5;}
+.toggle-box{width:20px;height:20px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;font-size:13px;}
+.date-toggle.on .toggle-box{border-color:var(--red);background:var(--red);color:#fff;}
+.toggle-text{font-size:14px;font-weight:500;}
+.toggle-sub{font-size:12px;color:var(--light);}
+.btn-submit{width:100%;padding:14px;background:var(--red);border:none;color:#fff;font-family:'Playfair Display',serif;font-size:17px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;margin-top:24px;}
+.btn-submit:hover{background:#a93226;}
+.success-toast{display:none;background:var(--green);color:#fff;padding:14px 20px;font-weight:600;font-size:14px;text-align:center;margin-top:16px;}
+.backend-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;}
+.backend-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;}
+.backend-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.filter-select{padding:8px 14px;border:1.5px solid var(--border);background:#fff;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;outline:none;color:var(--dark);}
+.filter-select:focus{border-color:var(--red);}
+.btn-export{padding:8px 18px;background:var(--dark);color:#fff;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.5px;transition:background .2s;}
+.btn-export:hover{background:var(--mid);}
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:28px;}
+.stat-box{background:#fff;border:1px solid var(--border);padding:16px;text-align:center;}
+.stat-num{font-family:'Playfair Display',serif;font-size:32px;font-weight:900;color:var(--red);line-height:1;}
+.stat-lbl{font-size:11px;letter-spacing:2px;color:var(--light);text-transform:uppercase;margin-top:4px;}
+.stall-card{background:#fff;border:1px solid var(--border);margin-bottom:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+.stall-header{display:flex;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;cursor:pointer;transition:background .15s;}
+.stall-header:hover{background:var(--cream);}
+.stall-rank{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:var(--gold);width:32px;text-align:center;flex-shrink:0;}
+.stall-info{flex:1;min-width:0;}
+.stall-name{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.stall-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+.stall-tag{font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;font-weight:600;}
+.tag-type{background:#fff3cd;color:#856404;}
+.tag-date{background:#fce4ec;color:#c62828;}
+.tag-location{background:#e8f5e9;color:#2e7d32;}
+.stall-rating{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.rating-stars{font-size:16px;letter-spacing:1px;}
+.rating-num{font-family:'Playfair Display',serif;font-size:20px;font-weight:900;color:var(--dark);}
+.rating-count{font-size:12px;color:var(--light);}
+.rating-price{font-size:13px;font-weight:600;color:var(--green);background:#e8f5e9;padding:3px 10px;flex-shrink:0;}
+.submissions-list{padding:0 20px 12px;display:none;}
+.submissions-list.open{display:block;}
+.sub-item{padding:10px 0;border-bottom:1px dashed var(--border);font-size:13px;display:flex;gap:12px;align-items:flex-start;}
+.sub-item:last-child{border-bottom:none;}
+.sub-stars{font-size:13px;flex-shrink:0;}
+.sub-note{flex:1;color:#555;line-height:1.5;}
+.sub-meta{font-size:11px;color:var(--light);flex-shrink:0;white-space:nowrap;}
+.sub-map{font-size:11px;color:var(--red);text-decoration:none;}
+.sub-map:hover{text-decoration:underline;}
+.expand-btn{background:none;border:none;color:var(--light);font-size:12px;letter-spacing:1px;cursor:pointer;padding:8px 20px;text-transform:uppercase;font-family:'DM Sans',sans-serif;font-weight:600;width:100%;text-align:left;transition:color .15s;}
+.expand-btn:hover{color:var(--red);}
+.empty-state{text-align:center;padding:60px 20px;color:var(--light);font-size:15px;}
+.empty-state .emoji{font-size:48px;display:block;margin-bottom:12px;}
+
+/* ── DATE PLANNER ── */
+.planner-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+@media(max-width:680px){.planner-grid{grid-template-columns:1fr;}}
+.pref-card{background:#fff;border:1px solid var(--border);padding:28px;box-shadow:0 4px 24px rgba(0,0,0,.06);}
+.pref-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:6px;}
+.pref-sub{font-size:13px;color:var(--light);margin-bottom:24px;line-height:1.5;}
+.range-wrap{display:flex;align-items:center;gap:12px;}
+.range-wrap input[type=range]{flex:1;accent-color:var(--red);}
+.range-val{font-family:'Playfair Display',serif;font-size:18px;font-weight:900;color:var(--red);min-width:36px;text-align:right;}
+.toggle-row{display:flex;gap:0;border:1.5px solid var(--border);overflow:hidden;}
+.toggle-opt{flex:1;padding:10px;text-align:center;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;border:none;background:var(--cream);color:var(--light);}
+.toggle-opt.on{background:var(--red);color:#fff;}
+.btn-plan{width:100%;padding:14px;background:var(--gold);border:none;color:#fff;font-family:'Playfair Display',serif;font-size:17px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;margin-top:8px;}
+.btn-plan:hover{background:#d35400;}
+.btn-plan:disabled{background:#ccc;cursor:not-allowed;}
+
+/* Result card */
+.plan-result{background:#fff;border:1px solid var(--border);box-shadow:0 4px 24px rgba(0,0,0,.06);}
+.plan-result-inner{padding:28px;}
+.plan-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.plan-title{font-family:'Playfair Display',serif;font-size:22px;font-weight:900;color:var(--dark);}
+.plan-subtitle{font-size:13px;color:var(--light);margin-top:3px;}
+.btn-export-img{padding:9px 18px;background:var(--dark);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.5px;transition:background .2s;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+.btn-export-img:hover{background:var(--mid);}
+
+.plan-stop{display:flex;gap:16px;margin-bottom:0;position:relative;}
+.plan-stop:not(:last-child)::after{content:'';position:absolute;left:19px;top:44px;bottom:-16px;width:2px;background:var(--border);}
+.stop-num{width:40px;height:40px;border-radius:50%;background:var(--red);color:#fff;font-family:'Playfair Display',serif;font-size:18px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;z-index:1;}
+.stop-body{flex:1;padding-bottom:24px;}
+.stop-name{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--dark);margin-bottom:4px;}
+.stop-meta{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px;}
+.stop-tag{font-size:11px;padding:2px 8px;font-weight:600;letter-spacing:1px;text-transform:uppercase;}
+.stop-note{font-size:13px;color:#555;line-height:1.6;margin-bottom:6px;}
+.stop-time{font-size:12px;color:var(--gold);font-weight:600;letter-spacing:1px;}
+.pin-btn{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--red);text-decoration:none;font-weight:600;padding:3px 10px;border:1px solid var(--red);transition:all .2s;}
+.pin-btn:hover{background:var(--red);color:#fff;}
+
+.plan-summary{background:var(--cream);border-top:1px solid var(--border);padding:16px 28px;display:flex;gap:20px;flex-wrap:wrap;}
+.plan-sum-item{font-size:13px;color:var(--mid);}
+.plan-sum-item strong{color:var(--dark);}
+
+.ai-thinking{text-align:center;padding:40px 20px;color:var(--light);}
+.ai-thinking .spinner{font-size:32px;display:block;margin-bottom:12px;animation:spin 1s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.ai-error{background:#fff5f5;border:1px solid #fcc;padding:16px 20px;color:var(--red);font-size:14px;margin-top:16px;}
+
+/* ── REVIEWS ── */
+.reviews-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:24px;}
+.reviews-title{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;}
+.reviews-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+.reviews-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+.rv-card{background:#fff;border:1px solid var(--border);display:flex;flex-direction:column;box-shadow:0 2px 8px rgba(0,0,0,.04);transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden;}
+.rv-card:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.1);}
+.rv-card-top{padding:18px 18px 12px;}
+.rv-dish{font-family:'Playfair Display',serif;font-size:17px;font-weight:700;color:var(--dark);margin-bottom:4px;line-height:1.3;}
+.rv-type-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+.rv-stars{font-size:18px;letter-spacing:1px;}
+.rv-rating-num{font-family:'Playfair Display',serif;font-size:15px;font-weight:900;color:var(--dark);}
+.rv-price{font-size:11px;font-weight:600;color:var(--green);background:#e8f5e9;padding:2px 8px;letter-spacing:1px;}
+.rv-date-badge{font-size:11px;color:#c62828;background:#fce4ec;padding:2px 8px;font-weight:600;letter-spacing:1px;}
+.rv-location{font-size:12px;color:var(--light);margin-bottom:8px;display:flex;align-items:center;gap:4px;}
+.rv-note{font-size:13px;color:#555;line-height:1.6;flex:1;padding:0 18px 14px;}
+.rv-note em{color:#aaa;}
+.rv-footer{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-top:1px solid var(--border);background:var(--cream);}
+.rv-date{font-size:11px;color:var(--light);letter-spacing:.5px;}
+.rv-pin{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--red);text-decoration:none;font-weight:600;padding:4px 10px;border:1px solid var(--red);transition:all .15s;}
+.rv-pin:hover{background:var(--red);color:#fff;}
+.rv-type-tag{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;font-weight:600;background:#fff3cd;color:#856404;}
+#panel-landing{background:var(--dark);padding:0;max-width:none;}
+
+/* ── LANDING PAGE ── */
+.landing{max-width:760px;margin:0 auto;padding:48px 20px 72px;text-align:center;}
+.landing-kicker{font-size:11px;letter-spacing:5px;text-transform:uppercase;color:var(--gold);margin-bottom:16px;opacity:.9;}
+.landing-title{font-family:'Playfair Display',serif;font-size:clamp(38px,7vw,72px);font-weight:900;color:#fff;line-height:1.05;margin-bottom:16px;text-shadow:3px 3px 0 var(--red);}
+.landing-title span{color:var(--gold);}
+.landing-sub{font-size:16px;color:rgba(255,255,255,.55);max-width:500px;margin:0 auto 52px;line-height:1.7;}
+.landing-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;max-width:640px;margin:0 auto 36px;}
+@media(max-width:540px){.landing-cards{grid-template-columns:1fr;}}
+.landing-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:28px 24px 24px;cursor:pointer;transition:all .22s;text-align:left;position:relative;overflow:hidden;}
+.landing-card::before{content:'';position:absolute;inset:0;border-radius:20px;opacity:0;transition:opacity .22s;}
+.landing-card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.1);box-shadow:0 12px 40px rgba(0,0,0,.3);}
+.lc-icon{font-size:36px;margin-bottom:14px;display:block;line-height:1;}
+.lc-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:#fff;margin-bottom:6px;}
+.lc-desc{font-size:13px;color:rgba(255,255,255,.5);line-height:1.6;}
+.lc-pill{display:inline-block;margin-top:14px;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:.5px;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);transition:all .22s;}
+.landing-card:hover .lc-pill{color:#fff;border-color:rgba(255,255,255,.4);}
+.landing-footer{font-size:12px;color:rgba(255,255,255,.3);letter-spacing:1px;margin-top:8px;}
+.back-btn{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.5);border-radius:20px;padding:7px 18px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;font-family:'DM Sans',sans-serif;margin-bottom:14px;}
+.back-btn:hover{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.3);}
+</style>
+</head>
+<body>
+<div id="siteHero" style="display:none;background:var(--dark);padding:28px 24px 24px;text-align:center;position:relative;">
+  <div style="font-size:11px;letter-spacing:5px;text-transform:uppercase;color:var(--gold);margin-bottom:8px;opacity:.9;">🇸🇬 Singapore Hawker Culture</div>
+  <div style="font-family:'Playfair Display',serif;font-size:clamp(28px,5vw,48px);font-weight:900;color:#fff;line-height:1.05;margin-bottom:6px;text-shadow:2px 2px 0 var(--red);">Hawker <span style="color:var(--gold);">Kaki</span></div>
+  <div id="heroSub" style="font-size:14px;color:rgba(255,255,255,.5);margin-bottom:18px;"></div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+    <button onclick="goHome()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.7);border-radius:20px;padding:7px 18px;font-size:12px;font-weight:600;cursor:pointer;letter-spacing:1px;font-family:'DM Sans',sans-serif;">← Back to Home</button>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:0;border:1px solid rgba(255,255,255,.15);overflow:hidden;">
+      <button id="nav-submit"  onclick="goTo('submit')"  style="background:transparent;border:none;border-right:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;letter-spacing:1px;padding:10px 18px;cursor:pointer;text-transform:uppercase;transition:all .2s;">✍ Recommend</button>
+      <button id="nav-reviews" onclick="goTo('reviews')" style="background:transparent;border:none;border-right:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;letter-spacing:1px;padding:10px 18px;cursor:pointer;text-transform:uppercase;transition:all .2s;">🍜 Reviews</button>
+      <button id="nav-backend" onclick="goTo('backend')" style="background:transparent;border:none;border-right:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;letter-spacing:1px;padding:10px 18px;cursor:pointer;text-transform:uppercase;transition:all .2s;">📊 All Picks</button>
+      <button id="nav-planner" onclick="goTo('planner')" style="background:transparent;border:none;color:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;letter-spacing:1px;padding:10px 18px;cursor:pointer;text-transform:uppercase;transition:all .2s;">💑 Date Planner</button>
+    </div>
+  </div>
+</div>
+
+<!-- LANDING -->
+<div id="page-landing" style="background:var(--dark);min-height:100vh;display:block;">
+  <div style="max-width:720px;margin:0 auto;padding:56px 24px 80px;text-align:center;">
+    <div style="font-size:11px;letter-spacing:5px;text-transform:uppercase;color:var(--gold);margin-bottom:14px;opacity:.9;">🇸🇬 Your Hawker Guide</div>
+    <div style="font-family:'Playfair Display',serif;font-size:clamp(42px,8vw,76px);font-weight:900;color:#fff;line-height:1.05;margin-bottom:16px;text-shadow:3px 3px 0 var(--red);">Hawker <span style="color:var(--gold);">Kaki</span></div>
+    <div style="font-size:16px;color:rgba(255,255,255,.45);max-width:480px;margin:0 auto 52px;line-height:1.7;">The community-powered guide to Singapore's best hawker food. Discover, share, and plan your next hawker adventure.</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;max-width:620px;margin:0 auto 32px;">
+      <div onclick="goTo('submit')"  style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px 22px 22px;cursor:pointer;text-align:left;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,.12)';this.style.transform='translateY(-4px)'" onmouseout="this.style.background='rgba(255,255,255,.06)';this.style.transform='translateY(0)'">
+        <div style="font-size:36px;margin-bottom:12px;">✍</div>
+        <div style="font-family:'Playfair Display',serif;font-size:19px;font-weight:700;color:#fff;margin-bottom:6px;">Recommend a Stall</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.45);line-height:1.6;margin-bottom:14px;">Know a hidden gem? Share it with the community — rate it, describe it, drop a pin.</div>
+        <span style="display:inline-block;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);">Add your pick →</span>
+      </div>
+      <div onclick="goTo('reviews')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px 22px 22px;cursor:pointer;text-align:left;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,.12)';this.style.transform='translateY(-4px)'" onmouseout="this.style.background='rgba(255,255,255,.06)';this.style.transform='translateY(0)'">
+        <div style="font-size:36px;margin-bottom:12px;">🍜</div>
+        <div style="font-family:'Playfair Display',serif;font-size:19px;font-weight:700;color:#fff;margin-bottom:6px;">Browse Reviews</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.45);line-height:1.6;margin-bottom:14px;">Read what the community has tried and loved. Filter by type, rating, or vibe.</div>
+        <span style="display:inline-block;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);">Explore reviews →</span>
+      </div>
+      <div onclick="goTo('backend')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px 22px 22px;cursor:pointer;text-align:left;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,.12)';this.style.transform='translateY(-4px)'" onmouseout="this.style.background='rgba(255,255,255,.06)';this.style.transform='translateY(0)'">
+        <div style="font-size:36px;margin-bottom:12px;">📊</div>
+        <div style="font-family:'Playfair Display',serif;font-size:19px;font-weight:700;color:#fff;margin-bottom:6px;">All Picks</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.45);line-height:1.6;margin-bottom:14px;">See every stall ranked and compiled. The ultimate community leaderboard.</div>
+        <span style="display:inline-block;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);">View rankings →</span>
+      </div>
+      <div onclick="goTo('planner')" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px 22px 22px;cursor:pointer;text-align:left;transition:all .2s;" onmouseover="this.style.background='rgba(255,255,255,.12)';this.style.transform='translateY(-4px)'" onmouseout="this.style.background='rgba(255,255,255,.06)';this.style.transform='translateY(0)'">
+        <div style="font-size:36px;margin-bottom:12px;">💑</div>
+        <div style="font-family:'Playfair Display',serif;font-size:19px;font-weight:700;color:#fff;margin-bottom:6px;">Plan a Hawker Date</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.45);line-height:1.6;margin-bottom:14px;">Tell us your preferences and we'll craft a perfect date itinerary from the food bank.</div>
+        <span style="display:inline-block;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);">Plan my date →</span>
+      </div>
+    </div>
+    <div style="font-size:12px;color:rgba(255,255,255,.2);letter-spacing:1px;">Community-powered · Built with love for SG hawker culture</div>
+  </div>
+</div>
+
+<!-- CONTENT PAGES — hidden by default -->
+<div id="page-submit"  style="display:none;max-width:900px;margin:0 auto;padding:36px 20px 60px;">
+  <div class="form-card">
+    <div class="form-title">Drop a recommendation 🍜</div>
+    <div class="form-sub">Tell us about a hawker stall worth visiting. Your entry joins the community food bank.</div>
+    <div class="field-row">
+      <div class="field"><label>Stall / Dish Name <span>*</span></label><input type="text" id="f-name" placeholder="e.g. Ah Kow Char Kway Teow"/></div>
+      <div class="field"><label>Food Type <span>*</span></label>
+        <select id="f-type"><option value="">— Select type —</option><option>Char Kway Teow</option><option>Chicken Rice</option><option>Laksa</option><option>Bak Chor Mee</option><option>Hokkien Mee</option><option>Nasi Lemak</option><option>Wanton Mee</option><option>Roti Prata</option><option>Satay</option><option>Rojak</option><option>Carrot Cake</option><option>BBQ Stingray</option><option>Oyster Omelette</option><option>Ice Kachang</option><option>Chendol</option><option>Popiah</option><option>Fishball Noodles</option><option>Mee Rebus</option><option>Bak Kut Teh</option><option>Other</option></select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Hawker Centre / Location <span>*</span></label><input type="text" id="f-location" placeholder="e.g. Old Airport Road Food Centre"/></div>
+      <div class="field"><label>Approx. Price (SGD) <span>*</span></label>
+        <select id="f-price"><option value="">— Select range —</option><option>Under $3</option><option>$3 – $5</option><option>$5 – $8</option><option>$8 – $12</option><option>Above $12</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Google Maps Link (optional)</label><input type="url" id="f-map" placeholder="https://maps.google.com/..."/></div>
+    <div class="field">
+      <label>Your Rating <span>*</span></label>
+      <div class="stars-wrap" id="starPicker">
+        <button class="star-btn" data-v="1" onclick="setRating(1)">⭐</button>
+        <button class="star-btn" data-v="2" onclick="setRating(2)">⭐</button>
+        <button class="star-btn" data-v="3" onclick="setRating(3)">⭐</button>
+        <button class="star-btn" data-v="4" onclick="setRating(4)">⭐</button>
+        <button class="star-btn" data-v="5" onclick="setRating(5)">⭐</button>
+        <span class="star-label" id="starLabel">Tap to rate</span>
+      </div>
+    </div>
+    <div class="field"><label>Notes (optional)</label><textarea id="f-notes" placeholder="What makes it special? Best time to go? Queue tips?"></textarea></div>
+    <div class="field">
+      <label>Hawker Date Worthy?</label>
+      <div class="date-toggle" id="dateToggle" onclick="toggleDate()">
+        <div class="toggle-box" id="dateBox"></div>
+        <div><div class="toggle-text">💑 Yes — I'd bring a date here</div><div class="toggle-sub">Good ambience, seating, and worth the queue together</div></div>
+      </div>
+    </div>
+    <button class="btn-submit" onclick="submitEntry()">Submit Recommendation →</button>
+    <div class="success-toast" id="successToast">🎉 Added to the hawker bank! Shiok lah!</div>
+  </div>
+</div>
+
+<div id="page-backend" style="display:none;max-width:900px;margin:0 auto;padding:36px 20px 60px;">
+  <div class="backend-header">
+    <div class="backend-title">Community Picks 🍽️</div>
+    <div class="backend-controls">
+      <select class="filter-select" id="filterType" onchange="renderBackend()"><option value="">All Types</option></select>
+      <select class="filter-select" id="filterDate" onchange="renderBackend()"><option value="">All Entries</option><option value="date">Date-worthy only 💑</option></select>
+      <select class="filter-select" id="sortBy" onchange="renderBackend()"><option value="rating">Highest Rated</option><option value="count">Most Recommended</option><option value="recent">Most Recent</option></select>
+      <button class="btn-export" onclick="exportCSV()">⬇ Export CSV</button>
+    </div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-num" id="s-total">—</div><div class="stat-lbl">Total Recs</div></div>
+    <div class="stat-box"><div class="stat-num" id="s-stalls">—</div><div class="stat-lbl">Unique Stalls</div></div>
+    <div class="stat-box"><div class="stat-num" id="s-date">—</div><div class="stat-lbl">Date Picks</div></div>
+    <div class="stat-box"><div class="stat-num" id="s-avg">—</div><div class="stat-lbl">Avg Rating</div></div>
+  </div>
+  <div id="backendList"><div class="empty-state"><span class="emoji">🍜</span>Switch to Recommend tab to add the first entry!</div></div>
+</div>
+
+<div id="page-reviews" style="display:none;max-width:900px;margin:0 auto;padding:36px 20px 60px;">
+  <div class="reviews-bar">
+    <div class="reviews-title">Community Reviews 🍜</div>
+    <div class="reviews-controls">
+      <select class="filter-select" id="rv-filter-type" onchange="renderReviews()"><option value="">All Types</option></select>
+      <select class="filter-select" id="rv-filter-rating" onchange="renderReviews()">
+        <option value="">All Ratings</option>
+        <option value="5">⭐⭐⭐⭐⭐ only</option>
+        <option value="4">⭐⭐⭐⭐+</option>
+        <option value="3">⭐⭐⭐+</option>
+      </select>
+      <select class="filter-select" id="rv-filter-date" onchange="renderReviews()">
+        <option value="">All Entries</option>
+        <option value="date">💑 Date-worthy only</option>
+      </select>
+      <select class="filter-select" id="rv-sort" onchange="renderReviews()">
+        <option value="recent">Newest first</option>
+        <option value="rating">Highest rated</option>
+        <option value="name">A → Z</option>
+      </select>
+    </div>
+  </div>
+  <div id="rv-count" style="font-size:13px;color:var(--light);margin-bottom:16px;letter-spacing:.5px;"></div>
+  <div class="reviews-grid" id="reviewsGrid">
+    <div class="empty-state"><span class="emoji">🍜</span>No reviews yet — be the first to recommend!</div>
+  </div>
+</div>
+
+<div id="page-planner" style="display:none;max-width:900px;margin:0 auto;padding:36px 20px 60px;">
+  <div class="planner-grid">
+    <!-- Preferences form -->
+    <div class="pref-card">
+      <div class="pref-title">Plan Your Hawker Date 💑</div>
+      <div class="pref-sub">Tell us your preferences and we'll craft a perfect hawker date itinerary from the community food bank.</div>
+
+      <div class="field">
+        <label>Preferred Area in Singapore</label>
+        <select id="p-area">
+          <option value="">No preference — surprise me</option>
+          <option>Central (Tanjong Pagar, Chinatown, CBD)</option>
+          <option>East (Bedok, Tampines, Katong, Geylang)</option>
+          <option>West (Clementi, Jurong, Buona Vista)</option>
+          <option>North (Woodlands, Yishun, AMK)</option>
+          <option>North-East (Serangoon, Hougang, Punggol)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Number of Dishes to Try</label>
+        <div class="range-wrap">
+          <input type="range" id="p-dishes" min="2" max="6" value="3" oninput="document.getElementById('p-dishes-val').textContent=this.value"/>
+          <div class="range-val" id="p-dishes-val">3</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Date Duration</label>
+        <div class="range-wrap">
+          <input type="range" id="p-duration" min="1" max="4" value="2" step="0.5" oninput="document.getElementById('p-duration-val').textContent=this.value+'h'"/>
+          <div class="range-val" id="p-duration-val">2h</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Minimum Rating Acceptable</label>
+        <div class="toggle-row">
+          <button class="toggle-opt on" id="minr-3" onclick="setMinRating(3,this)">3⭐+</button>
+          <button class="toggle-opt"    id="minr-4" onclick="setMinRating(4,this)">4⭐+</button>
+          <button class="toggle-opt"    id="minr-5" onclick="setMinRating(5,this)">5⭐ only</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Willing to visit multiple hawker centres?</label>
+        <div class="toggle-row">
+          <button class="toggle-opt on" id="multi-yes" onclick="setMulti(true,this)">Yes, let's explore</button>
+          <button class="toggle-opt"    id="multi-no"  onclick="setMulti(false,this)">No, stay in one</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Date Vibe</label>
+        <select id="p-vibe">
+          <option value="casual">Casual & Chill</option>
+          <option value="adventurous">Adventurous — try new things</option>
+          <option value="classic">Classic SG hawker experience</option>
+          <option value="budget">Budget-friendly date</option>
+        </select>
+      </div>
+
+      <button class="btn-plan" id="planBtn" onclick="generatePlan()">✨ Generate My Hawker Date →</button>
+    </div>
+
+    <!-- Result panel -->
+    <div id="planOutput">
+      <div class="empty-state">
+        <span class="emoji">💑</span>
+        Fill in your preferences and hit Generate to get your perfect hawker date plan!
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+const STORAGE_KEY='hawker_kaki_v1';
+let selectedRating=0,isDateWorthy=false,allEntries=[],openCards={};
+let plannerMinRating=3,plannerMulti=true;
+
+const TAB_SUBS={
+  submit:  'Share a stall you love with the community.',
+  reviews: 'See what fellow food lovers have tried and rated.',
+  backend: 'The full community leaderboard of SG hawker picks.',
+  planner: 'Build your perfect hawker date, powered by the community.'
+};
+const PAGES = ['landing','submit','backend','reviews','planner'];
+
+function goTo(tab) {
+  // Hide everything
+  PAGES.forEach(p => {
+    const el = document.getElementById('page-'+p);
+    if(el) el.style.display = 'none';
+  });
+  // Hide hero on landing, show on others
+  const hero = document.getElementById('siteHero');
+  if(tab === 'landing') {
+    hero.style.display = 'none';
+    document.getElementById('page-landing').style.display = 'block';
+    return;
+  }
+  // Show hero
+  hero.style.display = 'block';
+  // Update subtitle
+  document.getElementById('heroSub').textContent = TAB_SUBS[tab] || '';
+  // Highlight correct nav button
+  ['submit','reviews','backend','planner'].forEach(t => {
+    const btn = document.getElementById('nav-'+t);
+    if(btn) btn.style.background = (t===tab) ? 'var(--red)' : 'transparent';
+    if(btn) btn.style.color = (t===tab) ? '#fff' : 'rgba(255,255,255,.5)';
+  });
+  // Show page
+  const page = document.getElementById('page-'+tab);
+  if(page) page.style.display = 'block';
+  // Load data
+  if(tab==='backend') loadEntries();
+  if(tab==='reviews') loadAndRenderReviews();
+  if(tab==='planner') loadEntriesForPlanner();
+}
+
+function goHome() { goTo('landing'); }
+
+// Keep showTab as alias so any leftover references still work
+function showTab(tab) { goTo(tab); }
+
+function setRating(v){
+  selectedRating=v;
+  document.querySelectorAll('.star-btn').forEach(b=>{b.classList.toggle('lit',parseInt(b.dataset.v)<=v);});
+  const labels=['','Poor','Okay','Good','Great','Shiok!'];
+  document.getElementById('starLabel').textContent=labels[v];
+}
+
+function toggleDate(){
+  isDateWorthy=!isDateWorthy;
+  document.getElementById('dateToggle').classList.toggle('on',isDateWorthy);
+  document.getElementById('dateBox').textContent=isDateWorthy?'✓':'';
+}
+
+function submitEntry(){
+  const name=document.getElementById('f-name').value.trim();
+  const type=document.getElementById('f-type').value;
+  const location=document.getElementById('f-location').value.trim();
+  const price=document.getElementById('f-price').value;
+  const mapLink=document.getElementById('f-map').value.trim();
+  const notes=document.getElementById('f-notes').value.trim();
+  if(!name||!type||!location||!price||!selectedRating){alert('Please fill in all required fields and give a rating!');return;}
+  const entry={id:Date.now()+Math.random(),name,type,location,price,mapLink,notes,rating:selectedRating,dateWorthy:isDateWorthy,timestamp:new Date().toISOString()};
+  const existing=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
+  existing.push(entry);
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(existing));
+  document.getElementById('f-name').value='';
+  document.getElementById('f-type').value='';
+  document.getElementById('f-location').value='';
+  document.getElementById('f-price').value='';
+  document.getElementById('f-map').value='';
+  document.getElementById('f-notes').value='';
+  setRating(0);selectedRating=0;
+  document.querySelectorAll('.star-btn').forEach(b=>b.classList.remove('lit'));
+  document.getElementById('starLabel').textContent='Tap to rate';
+  isDateWorthy=false;
+  document.getElementById('dateToggle').classList.remove('on');
+  document.getElementById('dateBox').textContent='';
+  const t=document.getElementById('successToast');
+  t.style.display='block';setTimeout(()=>t.style.display='none',3500);
+}
+
+function loadEntries(){
+  try{allEntries=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){allEntries=[];}
+  populateTypeFilter();renderBackend();
+}
+
+function compileStalls(entries){
+  const map={};
+  entries.forEach(e=>{
+    const key=e.name.toLowerCase().trim();
+    if(!map[key]) map[key]={name:e.name,type:e.type,location:e.location,price:e.price,dateCount:0,entries:[]};
+    map[key].entries.push(e);
+    if(e.dateWorthy) map[key].dateCount++;
+  });
+  return Object.values(map).map(s=>({...s,
+    avgRating:(s.entries.reduce((a,e)=>a+e.rating,0)/s.entries.length).toFixed(1),
+    count:s.entries.length,
+    latest:s.entries[s.entries.length-1].timestamp,
+    isDateWorthy:s.dateCount>s.entries.length/2,
+  }));
+}
+
+function populateTypeFilter(){
+  const types=[...new Set(allEntries.map(e=>e.type))].sort();
+  const sel=document.getElementById('filterType');
+  sel.innerHTML='<option value="">All Types</option>';
+  types.forEach(t=>{const o=document.createElement('option');o.value=o.textContent=t;sel.appendChild(o);});
+}
+
+function renderBackend(){
+  const ft=document.getElementById('filterType').value;
+  const fd=document.getElementById('filterDate').value;
+  const sb=document.getElementById('sortBy').value;
+  let entries=[...allEntries];
+  if(ft) entries=entries.filter(e=>e.type===ft);
+  if(fd==='date') entries=entries.filter(e=>e.dateWorthy);
+  const stalls=compileStalls(entries);
+  stalls.sort((a,b)=>sb==='rating'?parseFloat(b.avgRating)-parseFloat(a.avgRating):sb==='count'?b.count-a.count:new Date(b.latest)-new Date(a.latest));
+  const all=compileStalls(allEntries);
+  document.getElementById('s-total').textContent=allEntries.length;
+  document.getElementById('s-stalls').textContent=all.length;
+  document.getElementById('s-date').textContent=allEntries.filter(e=>e.dateWorthy).length;
+  const avg=allEntries.length?(allEntries.reduce((s,e)=>s+e.rating,0)/allEntries.length).toFixed(1):'—';
+  document.getElementById('s-avg').textContent=avg;
+  const list=document.getElementById('backendList');
+  if(!stalls.length){list.innerHTML='<div class="empty-state"><span class="emoji">🍜</span>No entries match your filters.</div>';return;}
+  list.innerHTML=stalls.map((stall,i)=>{
+    const stars='⭐'.repeat(Math.round(parseFloat(stall.avgRating)));
+    const cardId='stall-'+i;
+    const isOpen=openCards[cardId];
+    const subsHtml=stall.entries.map(e=>`
+      <div class="sub-item">
+        <div class="sub-stars">${'⭐'.repeat(e.rating)}</div>
+        <div class="sub-note">${e.notes||'<em style="color:#aaa">No notes left</em>'}${e.mapLink?`<br><a class="sub-map" href="${e.mapLink}" target="_blank">📍 View on Maps</a>`:''}</div>
+        <div class="sub-meta">${e.dateWorthy?'💑 · ':''}${new Date(e.timestamp).toLocaleDateString('en-SG',{day:'numeric',month:'short'})}</div>
+      </div>`).join('');
+    return `<div class="stall-card">
+      <div class="stall-header" onclick="toggleCard('${cardId}')">
+        <div class="stall-rank">#${i+1}</div>
+        <div class="stall-info">
+          <div class="stall-name">${stall.name}</div>
+          <div class="stall-meta">
+            <span class="stall-tag tag-type">${stall.type}</span>
+            <span class="stall-tag tag-location">📍 ${stall.location}</span>
+            ${stall.isDateWorthy?'<span class="stall-tag tag-date">💑 Date Pick</span>':''}
+          </div>
+        </div>
+        <div class="rating-price">${stall.price}</div>
+        <div class="stall-rating">
+          <span class="rating-stars">${stars}</span>
+          <span class="rating-num">${stall.avgRating}</span>
+          <span class="rating-count">(${stall.count} rec${stall.count>1?'s':''})</span>
+        </div>
+      </div>
+      <div class="submissions-list${isOpen?' open':''}" id="${cardId}">${subsHtml}</div>
+      <button class="expand-btn" onclick="toggleCard('${cardId}')">${isOpen?'▲ Hide submissions':'▼ See '+stall.count+' submission'+(stall.count>1?'s':'')}</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleCard(id){
+  openCards[id]=!openCards[id];
+  const el=document.getElementById(id);
+  if(el) el.classList.toggle('open',openCards[id]);
+  const btn=el?el.nextElementSibling:null;
+  if(btn){
+    const stall=btn.closest('.stall-card');
+    const count=stall?stall.querySelectorAll('.sub-item').length:0;
+    btn.textContent=openCards[id]?'▲ Hide submissions':'▼ See '+count+' submission'+(count>1?'s':'');
+  }
+}
+
+function exportCSV(){
+  if(!allEntries.length){alert('No entries to export yet!');return;}
+  const headers=['Name','Type','Location','Price','Rating','Date Worthy','Notes','Map Link','Submitted'];
+  const rows=allEntries.map(e=>[`"${e.name}"`,`"${e.type}"`,`"${e.location}"`,`"${e.price}"`,e.rating,e.dateWorthy?'Yes':'No',`"${(e.notes||'').replace(/"/g,'""')}"`,`"${e.mapLink||''}"`,new Date(e.timestamp).toLocaleString('en-SG')]);
+  const csv=[headers,...rows].map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='hawker_kaki_export.csv';
+  a.click();
+}
+
+// ── REVIEWS ──
+function loadAndRenderReviews(){
+  try{allEntries=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){allEntries=[];}
+  // Populate type filter
+  const types=[...new Set(allEntries.map(e=>e.type))].sort();
+  const sel=document.getElementById('rv-filter-type');
+  sel.innerHTML='<option value="">All Types</option>';
+  types.forEach(t=>{const o=document.createElement('option');o.value=o.textContent=t;sel.appendChild(o);});
+  renderReviews();
+}
+
+function renderReviews(){
+  const ft    = document.getElementById('rv-filter-type').value;
+  const fr    = parseInt(document.getElementById('rv-filter-rating').value)||0;
+  const fd    = document.getElementById('rv-filter-date').value;
+  const sort  = document.getElementById('rv-sort').value;
+  const grid  = document.getElementById('reviewsGrid');
+
+  let entries = [...allEntries];
+  if(ft) entries=entries.filter(e=>e.type===ft);
+  if(fr) entries=entries.filter(e=>e.rating>=fr);
+  if(fd==='date') entries=entries.filter(e=>e.dateWorthy);
+
+  entries.sort((a,b)=>{
+    if(sort==='rating') return b.rating-a.rating;
+    if(sort==='name')   return a.name.localeCompare(b.name);
+    return new Date(b.timestamp)-new Date(a.timestamp);
+  });
+
+  document.getElementById('rv-count').textContent=
+    entries.length===0?'No reviews match your filters':
+    `${entries.length} review${entries.length===1?'':'s'} found`;
+
+  if(!entries.length){
+    grid.innerHTML='<div class="empty-state" style="grid-column:1/-1"><span class="emoji">🍜</span>No reviews match your filters.</div>';
+    return;
+  }
+
+  grid.innerHTML=entries.map(e=>{
+    const stars='⭐'.repeat(e.rating);
+    const mapsUrl=e.mapLink||`https://www.google.com/maps/search/${encodeURIComponent(e.name+' '+e.location+' Singapore')}`;
+    const dateStr=new Date(e.timestamp).toLocaleDateString('en-SG',{day:'numeric',month:'short',year:'numeric'});
+    return `
+    <div class="rv-card">
+      <div class="rv-card-top">
+        <div class="rv-dish">${e.name}</div>
+        <div class="rv-type-row">
+          <span class="rv-type-tag">${e.type}</span>
+          ${e.dateWorthy?'<span class="rv-date-badge">💑 Date Pick</span>':''}
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span class="rv-stars">${stars}</span>
+          <span class="rv-rating-num">${e.rating}/5</span>
+          <span class="rv-price">${e.price}</span>
+        </div>
+        <div class="rv-location">📍 ${e.location}</div>
+      </div>
+      <div class="rv-note">${e.notes?e.notes:'<em>No notes left by reviewer</em>'}</div>
+      <div class="rv-footer">
+        <div class="rv-date">${dateStr}</div>
+        <a class="rv-pin" href="${mapsUrl}" target="_blank">📍 Maps</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+// ── REVIEWS END ──
+
+// ── DATE PLANNER ──
+function setMinRating(v,btn){
+  plannerMinRating=v;
+  document.querySelectorAll('[id^="minr-"]').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function setMulti(v,btn){
+  plannerMulti=v;
+  document.querySelectorAll('[id^="multi-"]').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+function loadEntriesForPlanner(){
+  try{allEntries=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){allEntries=[];}
+}
+
+async function generatePlan(){
+  const area     = document.getElementById('p-area').value;
+  const dishes   = parseInt(document.getElementById('p-dishes').value);
+  const duration = parseFloat(document.getElementById('p-duration').value);
+  const vibe     = document.getElementById('p-vibe').value;
+  const output   = document.getElementById('planOutput');
+
+  // Load fresh entries
+  try{allEntries=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){allEntries=[];}
+
+  // Compile stalls meeting minimum rating
+  const compiled = compileStalls(allEntries).filter(s=>parseFloat(s.avgRating)>=plannerMinRating);
+
+  output.innerHTML=`<div class="ai-thinking"><span class="spinner">🍜</span>Crafting your perfect hawker date...</div>`;
+  document.getElementById('planBtn').disabled=true;
+
+  const foodBankSummary = compiled.slice(0,30).map(s=>
+    `- "${s.name}" (${s.type}) at ${s.location} | Rating: ${s.avgRating}/5 | Price: ${s.price} | Date-worthy: ${s.isDateWorthy?'Yes':'No'} | Notes: ${s.entries.map(e=>e.notes).filter(Boolean).join('; ')||'None'} | Maps: ${s.entries.find(e=>e.mapLink)?.mapLink||''}`
+  ).join('\n');
+
+  const prompt = `You are a Singapore hawker date planner. Generate a romantic hawker date itinerary based on these preferences and the community food bank below.
+
+PREFERENCES:
+- Area: ${area||'No preference (any part of Singapore)'}
+- Number of dishes/stops: ${dishes}
+- Duration: ${duration} hours
+- Minimum rating: ${plannerMinRating} stars
+- Willing to visit multiple hawker centres: ${plannerMulti?'Yes':'No'}
+- Date vibe: ${vibe}
+
+COMMUNITY FOOD BANK (real recommendations, use ONLY these):
+${foodBankSummary||'No entries yet — use your general knowledge of Singapore hawker food.'}
+
+Generate a date plan. Respond ONLY with a JSON object (no markdown, no backticks) in this exact format:
+{
+  "title": "short romantic date title",
+  "tagline": "one-line description of the date vibe",
+  "totalCost": "estimated total cost per person e.g. $8–$15",
+  "stops": [
+    {
+      "order": 1,
+      "name": "stall name",
+      "type": "food type",
+      "location": "hawker centre name",
+      "rating": "x.x",
+      "price": "price range",
+      "time": "suggested time e.g. 7:00 PM",
+      "duration": "e.g. 30 min",
+      "note": "why this is great for a date, what to order, tips",
+      "mapsLink": "google maps link if available from food bank, else empty string",
+      "dateWorthy": true/false
+    }
+  ],
+  "closingNote": "a warm one-sentence closing note for the couple"
+}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        messages:[{role:'user',content:prompt}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.find(c=>c.type==='text')?.text||'';
+    let plan;
+    try{plan=JSON.parse(text.replace(/```json|```/g,'').trim());}
+    catch(e){throw new Error('Could not parse plan: '+text.slice(0,200));}
+    renderPlan(plan);
+  } catch(err){
+    output.innerHTML=`<div class="ai-error">⚠️ Couldn't generate plan: ${err.message}.<br>Make sure you have entries in the food bank first!</div>`;
+  }
+  document.getElementById('planBtn').disabled=false;
+}
+
+function renderPlan(plan){
+  const output=document.getElementById('planOutput');
+  const stopsHtml=plan.stops.map((s,i)=>`
+    <div class="plan-stop">
+      <div class="stop-num">${s.order||i+1}</div>
+      <div class="stop-body">
+        <div class="stop-name">${s.name}</div>
+        <div class="stop-meta">
+          <span class="stop-tag tag-type">${s.type}</span>
+          <span class="stop-tag tag-location">📍 ${s.location}</span>
+          ${s.dateWorthy?'<span class="stop-tag tag-date">💑</span>':''}
+          <span style="font-size:13px;color:#e67e22;font-weight:700;">${'⭐'.repeat(Math.round(parseFloat(s.rating||0)))} ${s.rating}</span>
+          <span style="font-size:12px;color:var(--green);font-weight:600;">${s.price}</span>
+        </div>
+        <div class="stop-note">${s.note}</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div class="stop-time">⏰ ${s.time} · ${s.duration}</div>
+          ${s.mapsLink?`<a class="pin-btn" href="${s.mapsLink}" target="_blank">📍 View on Maps</a>`:`<a class="pin-btn" href="https://www.google.com/maps/search/${encodeURIComponent(s.name+' '+s.location+' Singapore')}" target="_blank">📍 Search on Maps</a>`}
+        </div>
+      </div>
+    </div>`).join('');
+
+  output.innerHTML=`
+    <div class="plan-result" id="planCard">
+      <div class="plan-result-inner">
+        <div class="plan-header">
+          <div>
+            <div class="plan-title">${plan.title}</div>
+            <div class="plan-subtitle">${plan.tagline}</div>
+          </div>
+          <button class="btn-export-img" onclick="exportPlanImage()">📸 Save as Image</button>
+        </div>
+        ${stopsHtml}
+        <div style="margin-top:20px;padding:14px 18px;background:#fff8f0;border-left:3px solid var(--gold);font-size:14px;color:var(--mid);font-style:italic;line-height:1.6;">
+          ${plan.closingNote}
+        </div>
+      </div>
+      <div class="plan-summary">
+        <div class="plan-sum-item">🍽️ <strong>${plan.stops.length} stops</strong></div>
+        <div class="plan-sum-item">💰 Est. <strong>${plan.totalCost}</strong> per person</div>
+        <div class="plan-sum-item">⏱ <strong>${document.getElementById('p-duration').value}h</strong> date</div>
+        <div class="plan-sum-item">⭐ Min rating <strong>${plannerMinRating}★</strong></div>
+      </div>
+    </div>`;
+}
+
+async function exportPlanImage(){
+  const card=document.getElementById('planCard');
+  if(!card){return;}
+  // Temporarily hide the export button for a clean image
+  const btn=card.querySelector('.btn-export-img');
+  const pinBtns=card.querySelectorAll('.pin-btn');
+  if(btn) btn.style.display='none';
+  pinBtns.forEach(b=>b.style.pointerEvents='none');
+  try{
+    const canvas=await html2canvas(card,{scale:2,useCORS:true,backgroundColor:'#fff'});
+    const a=document.createElement('a');
+    a.download='hawker-date-plan.png';
+    a.href=canvas.toDataURL('image/png');
+    a.click();
+  }catch(e){alert('Export failed — try right-clicking the plan and saving as image instead.');}
+  if(btn) btn.style.display='';
+  pinBtns.forEach(b=>b.style.pointerEvents='');
+}
+
+// ── DATE PLANNER END ──
+
+// Seed demo data so backend isn't empty on first open
+(function seedDemo(){
+  const ex=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
+  if(ex.length>0)return;
+  const demos=[
+    {id:1,name:"Tian Tian Chicken Rice",type:"Chicken Rice",location:"Maxwell Food Centre",price:"$3 – $5",mapLink:"",notes:"Queue early, worth every minute. Get the drumstick.",rating:5,dateWorthy:true,timestamp:"2026-03-01T08:00:00Z"},
+    {id:2,name:"Tian Tian Chicken Rice",type:"Chicken Rice",location:"Maxwell Food Centre",price:"$3 – $5",mapLink:"",notes:"Classic. The chili is the real star.",rating:4,dateWorthy:true,timestamp:"2026-03-05T10:00:00Z"},
+    {id:3,name:"Hill Street Char Kway Teow",type:"Char Kway Teow",location:"Bedok Interchange Hawker Centre",price:"$3 – $5",mapLink:"",notes:"Wok hei is insane. Order the large portion.",rating:5,dateWorthy:false,timestamp:"2026-03-02T12:00:00Z"},
+    {id:4,name:"328 Katong Laksa",type:"Laksa",location:"East Coast Road",price:"$5 – $8",mapLink:"",notes:"Spoon only, no chopsticks. Rich coconut broth.",rating:5,dateWorthy:true,timestamp:"2026-03-03T09:00:00Z"},
+    {id:5,name:"Amoy Street Lor Mee",type:"Other",location:"Amoy Street Food Centre",price:"Under $3",mapLink:"",notes:"Thick gravy, crispy fish. Hidden gem on Level 2.",rating:4,dateWorthy:false,timestamp:"2026-03-04T11:00:00Z"},
+  ];
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(demos));
+})();
+
+// Init — always start on landing page
+goTo('landing');
+</script>
+</body>
+</html>
