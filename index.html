@@ -392,6 +392,44 @@ body{background:var(--cream);color:var(--dark);font-family:'DM Sans',sans-serif;
         </select>
       </div>
 
+      <div class="field">
+        <label>Date Mode</label>
+        <div class="toggle-row">
+          <button class="toggle-opt on" id="mode-normal" onclick="setTrailMode(false,this)">🍽️ Mixed Dishes</button>
+          <button class="toggle-opt"    id="mode-trail"  onclick="setTrailMode(true,this)">🗺️ Food Trail</button>
+        </div>
+      </div>
+
+      <!-- Food Trail picker — hidden unless trail mode active -->
+      <div class="field" id="trail-food-field" style="display:none;">
+        <label>Pick your trail dish <span style="color:var(--red)">*</span></label>
+        <select id="p-trail-food">
+          <option value="">— Choose a dish —</option>
+          <option>Char Kway Teow</option>
+          <option>Chicken Rice</option>
+          <option>Laksa</option>
+          <option>Bak Chor Mee</option>
+          <option>Hokkien Mee</option>
+          <option>Nasi Lemak</option>
+          <option>Wanton Mee</option>
+          <option>Roti Prata</option>
+          <option>Satay</option>
+          <option>Rojak</option>
+          <option>Carrot Cake</option>
+          <option>BBQ Stingray</option>
+          <option>Oyster Omelette</option>
+          <option>Ice Kachang</option>
+          <option>Chendol</option>
+          <option>Popiah</option>
+          <option>Fishball Noodles</option>
+          <option>Mee Rebus</option>
+          <option>Bak Kut Teh</option>
+        </select>
+        <div style="font-size:12px;color:var(--light);margin-top:6px;letter-spacing:.5px;">
+          We'll find the best spots across Singapore for this one dish — perfect for a friendly rivalry date 🏆
+        </div>
+      </div>
+
       <button class="btn-plan" id="planBtn" onclick="generatePlan()">✨ Generate My Hawker Date →</button>
     </div>
 
@@ -407,9 +445,31 @@ body{background:var(--cream);color:var(--dark);font-family:'DM Sans',sans-serif;
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script>
-const STORAGE_KEY='hawker_kaki_v1';
+// ── SUPABASE CONFIG ──
+// Replace these two values in Cursor with your real Supabase credentials
+const SUPABASE_URL  = 'https://oksdhjuejphcukclltps.supabase.co'
+const SUPABASE_KEY  = 'sb_publishable_rIBK-A2D0E4JBwLKn9KNSQ_A0nC7wCa'
+
+// Thin Supabase REST helper — no SDK needed
+async function sbSelect(){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?select=*&order=timestamp.desc`,{
+    headers:{ apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+  });
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+async function sbInsert(row){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}`,{
+    method:'POST',
+    headers:{ apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json', Prefer:'return=representation' },
+    body: JSON.stringify(row)
+  });
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
 let selectedRating=0,isDateWorthy=false,allEntries=[],openCards={};
-let plannerMinRating=3,plannerMulti=true;
+let plannerMinRating=3,plannerMulti=true,plannerTrailMode=false;
 
 const TAB_SUBS={
   submit:  'Share a stall you love with the community.',
@@ -469,7 +529,7 @@ function toggleDate(){
   document.getElementById('dateBox').textContent=isDateWorthy?'✓':'';
 }
 
-function submitEntry(){
+async function submitEntry(){
   const name=document.getElementById('f-name').value.trim();
   const type=document.getElementById('f-type').value;
   const location=document.getElementById('f-location').value.trim();
@@ -477,29 +537,52 @@ function submitEntry(){
   const mapLink=document.getElementById('f-map').value.trim();
   const notes=document.getElementById('f-notes').value.trim();
   if(!name||!type||!location||!price||!selectedRating){alert('Please fill in all required fields and give a rating!');return;}
-  const entry={id:Date.now()+Math.random(),name,type,location,price,mapLink,notes,rating:selectedRating,dateWorthy:isDateWorthy,timestamp:new Date().toISOString()};
-  const existing=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
-  existing.push(entry);
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(existing));
-  document.getElementById('f-name').value='';
-  document.getElementById('f-type').value='';
-  document.getElementById('f-location').value='';
-  document.getElementById('f-price').value='';
-  document.getElementById('f-map').value='';
-  document.getElementById('f-notes').value='';
-  setRating(0);selectedRating=0;
-  document.querySelectorAll('.star-btn').forEach(b=>b.classList.remove('lit'));
-  document.getElementById('starLabel').textContent='Tap to rate';
-  isDateWorthy=false;
-  document.getElementById('dateToggle').classList.remove('on');
-  document.getElementById('dateBox').textContent='';
-  const t=document.getElementById('successToast');
-  t.style.display='block';setTimeout(()=>t.style.display='none',3500);
+
+  const btn=document.querySelector('.btn-submit');
+  btn.textContent='Saving...'; btn.disabled=true;
+
+  try {
+    await sbInsert({
+      name, type, location, price,
+      map_link: mapLink, notes,
+      rating: selectedRating,
+      date_worthy: isDateWorthy,
+      timestamp: new Date().toISOString()
+    });
+    // Reset form
+    document.getElementById('f-name').value='';
+    document.getElementById('f-type').value='';
+    document.getElementById('f-location').value='';
+    document.getElementById('f-price').value='';
+    document.getElementById('f-map').value='';
+    document.getElementById('f-notes').value='';
+    setRating(0); selectedRating=0;
+    document.querySelectorAll('.star-btn').forEach(b=>b.classList.remove('lit'));
+    document.getElementById('starLabel').textContent='Tap to rate';
+    isDateWorthy=false;
+    document.getElementById('dateToggle').classList.remove('on');
+    document.getElementById('dateBox').textContent='';
+    const t=document.getElementById('successToast');
+    t.style.display='block'; setTimeout(()=>t.style.display='none',3500);
+  } catch(e){
+    alert('Could not save — check your Supabase config.\n'+e.message);
+  }
+  btn.textContent='Submit Recommendation →'; btn.disabled=false;
 }
 
-function loadEntries(){
-  try{allEntries=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){allEntries=[];}
-  populateTypeFilter();renderBackend();
+async function loadEntries(){
+  try{
+    const data = await sbSelect();
+    allEntries = data.map(r=>({
+      id: r.id, name: r.name, type: r.type, location: r.location,
+      price: r.price, mapLink: r.map_link||'', notes: r.notes||'',
+      rating: r.rating, dateWorthy: r.date_worthy, timestamp: r.timestamp
+    }));
+  }catch(e){
+    console.error('Supabase load failed:',e);
+    allEntries=[];
+  }
+  populateTypeFilter(); renderBackend();
 }
 
 function compileStalls(entries){
@@ -600,9 +683,15 @@ function exportCSV(){
 }
 
 // ── REVIEWS ──
-function loadAndRenderReviews(){
-  try{allEntries=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){allEntries=[];}
-  // Populate type filter
+async function loadAndRenderReviews(){
+  try{
+    const data = await sbSelect();
+    allEntries = data.map(r=>({
+      id: r.id, name: r.name, type: r.type, location: r.location,
+      price: r.price, mapLink: r.map_link||'', notes: r.notes||'',
+      rating: r.rating, dateWorthy: r.date_worthy, timestamp: r.timestamp
+    }));
+  }catch(e){ allEntries=[]; }
   const types=[...new Set(allEntries.map(e=>e.type))].sort();
   const sel=document.getElementById('rv-filter-type');
   sel.innerHTML='<option value="">All Types</option>';
@@ -677,31 +766,110 @@ function setMulti(v,btn){
   document.querySelectorAll('[id^="multi-"]').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
 }
-function loadEntriesForPlanner(){
-  try{allEntries=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){allEntries=[];}
+function setTrailMode(v,btn){
+  plannerTrailMode=v;
+  document.querySelectorAll('[id^="mode-"]').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('trail-food-field').style.display=v?'block':'none';
+  // Trail mode always visits multiple centres
+  if(v){
+    plannerMulti=true;
+    document.getElementById('multi-yes').classList.add('on');
+    document.getElementById('multi-no').classList.remove('on');
+  }
+}
+async function loadEntriesForPlanner(){
+  try{
+    const data = await sbSelect();
+    allEntries = data.map(r=>({
+      id: r.id, name: r.name, type: r.type, location: r.location,
+      price: r.price, mapLink: r.map_link||'', notes: r.notes||'',
+      rating: r.rating, dateWorthy: r.date_worthy, timestamp: r.timestamp
+    }));
+  }catch(e){ allEntries=[]; }
 }
 
 async function generatePlan(){
-  const area     = document.getElementById('p-area').value;
-  const dishes   = parseInt(document.getElementById('p-dishes').value);
-  const duration = parseFloat(document.getElementById('p-duration').value);
-  const vibe     = document.getElementById('p-vibe').value;
-  const output   = document.getElementById('planOutput');
+  const area       = document.getElementById('p-area').value;
+  const dishes     = parseInt(document.getElementById('p-dishes').value);
+  const duration   = parseFloat(document.getElementById('p-duration').value);
+  const vibe       = document.getElementById('p-vibe').value;
+  const trailFood  = document.getElementById('p-trail-food').value;
+  const output     = document.getElementById('planOutput');
 
-  // Load fresh entries
-  try{allEntries=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');}catch(e){allEntries=[];}
+  // Validate trail mode
+  if(plannerTrailMode && !trailFood){
+    alert('Please pick a dish for your Food Trail!');
+    return;
+  }
+
+  // Load fresh entries from Supabase
+  try{
+    const data = await sbSelect();
+    allEntries = data.map(r=>({
+      id: r.id, name: r.name, type: r.type, location: r.location,
+      price: r.price, mapLink: r.map_link||'', notes: r.notes||'',
+      rating: r.rating, dateWorthy: r.date_worthy, timestamp: r.timestamp
+    }));
+  }catch(e){ allEntries=[]; }
 
   // Compile stalls meeting minimum rating
-  const compiled = compileStalls(allEntries).filter(s=>parseFloat(s.avgRating)>=plannerMinRating);
+  // In trail mode, pre-filter to only stalls of that food type
+  const compiled = compileStalls(allEntries)
+    .filter(s=>parseFloat(s.avgRating)>=plannerMinRating)
+    .filter(s=>plannerTrailMode ? s.type.toLowerCase()===trailFood.toLowerCase() : true);
 
-  output.innerHTML=`<div class="ai-thinking"><span class="spinner">🍜</span>Crafting your perfect hawker date...</div>`;
+  output.innerHTML=`<div class="ai-thinking"><span class="spinner">🍜</span>${plannerTrailMode?`Building your ${trailFood} trail...`:'Crafting your perfect hawker date...'}</div>`;
   document.getElementById('planBtn').disabled=true;
 
   const foodBankSummary = compiled.slice(0,30).map(s=>
     `- "${s.name}" (${s.type}) at ${s.location} | Rating: ${s.avgRating}/5 | Price: ${s.price} | Date-worthy: ${s.isDateWorthy?'Yes':'No'} | Notes: ${s.entries.map(e=>e.notes).filter(Boolean).join('; ')||'None'} | Maps: ${s.entries.find(e=>e.mapLink)?.mapLink||''}`
   ).join('\n');
 
-  const prompt = `You are a Singapore hawker date planner. Generate a romantic hawker date itinerary based on these preferences and the community food bank below.
+  const prompt = plannerTrailMode
+    ? `You are a Singapore hawker food trail planner. The couple wants to do a SINGLE DISH TRAIL — visiting multiple hawker centres all serving the SAME dish to compare and find their favourite.
+
+TRAIL DISH: ${trailFood}
+PREFERENCES:
+- Area: ${area||'No preference — spread across Singapore for the full trail experience'}
+- Number of stops: ${dishes}
+- Duration: ${duration} hours
+- Minimum rating: ${plannerMinRating} stars
+- Date vibe: ${vibe}
+
+COMMUNITY FOOD BANK — ${trailFood} recommendations (use ONLY these, or general SG knowledge if empty):
+${foodBankSummary||`No ${trailFood} entries yet — use your general knowledge of the best ${trailFood} spots in Singapore.`}
+
+STRICT TRAIL RULES:
+1. EVERY stop must serve ${trailFood} — this is a single-dish trail.
+2. EVERY stop must be at a DIFFERENT hawker centre / location — the whole point is to compare different spots.
+3. No repeated stall names.
+4. Order stops geographically to minimise travel between them.
+5. Add a fun rivalry note — e.g. "compare the wok hei here vs the previous stop".
+
+Generate a food trail plan. Respond ONLY with a JSON object (no markdown, no backticks):
+{
+  "title": "fun trail title e.g. The Ultimate Hokkien Mee Trail",
+  "tagline": "one-line trail description",
+  "totalCost": "estimated total cost per person",
+  "stops": [
+    {
+      "order": 1,
+      "name": "stall name",
+      "type": "${trailFood}",
+      "location": "hawker centre name",
+      "rating": "x.x",
+      "price": "price range",
+      "time": "suggested time e.g. 6:00 PM",
+      "duration": "e.g. 30 min",
+      "note": "what makes this version unique, what to compare vs other stops",
+      "mapsLink": "google maps link if available, else empty string",
+      "dateWorthy": true
+    }
+  ],
+  "closingNote": "a fun closing verdict — who should pick the winner?"
+}`
+    : `You are a Singapore hawker date planner. Generate a romantic hawker date itinerary based on these preferences and the community food bank below.
 
 PREFERENCES:
 - Area: ${area||'No preference (any part of Singapore)'}
@@ -713,6 +881,12 @@ PREFERENCES:
 
 COMMUNITY FOOD BANK (real recommendations, use ONLY these):
 ${foodBankSummary||'No entries yet — use your general knowledge of Singapore hawker food.'}
+
+STRICT RULES:
+1. Each stop MUST be at a DIFFERENT stall (no repeated stall names).
+2. Each stop MUST have a UNIQUE dish/food type — do not repeat food types across stops.
+3. If "willing to visit multiple hawker centres" is No, all stops must share the same location. If Yes, vary the locations for a more interesting date.
+4. Never list the same hawker centre more than twice regardless of settings.
 
 Generate a date plan. Respond ONLY with a JSON object (no markdown, no backticks) in this exact format:
 {
@@ -752,6 +926,54 @@ Generate a date plan. Respond ONLY with a JSON object (no markdown, no backticks
     let plan;
     try{plan=JSON.parse(text.replace(/```json|```/g,'').trim());}
     catch(e){throw new Error('Could not parse plan: '+text.slice(0,200));}
+
+    // ── Client-side duplicate validation ──
+    const seenNames     = new Set();
+    const seenTypes     = new Set();
+    const seenLocations = new Set();
+    const locationCount = {};
+    const warnings      = [];
+
+    plan.stops = plan.stops.filter((stop) => {
+      const nameKey     = stop.name.toLowerCase().trim();
+      const typeKey     = stop.type.toLowerCase().trim();
+      const locationKey = stop.location.toLowerCase().trim();
+
+      if(seenNames.has(nameKey)){
+        warnings.push(`Removed duplicate stall: "${stop.name}"`);
+        return false;
+      }
+      // In trail mode, same food type is fine — but location MUST be unique
+      if(plannerTrailMode){
+        if(seenLocations.has(locationKey)){
+          warnings.push(`Removed duplicate location: "${stop.location}" — trail needs different spots!`);
+          return false;
+        }
+        seenLocations.add(locationKey);
+      } else {
+        // Normal mode: unique food types, max 2 of same location
+        if(seenTypes.has(typeKey)){
+          warnings.push(`Removed duplicate food type: "${stop.type}"`);
+          return false;
+        }
+        locationCount[locationKey] = (locationCount[locationKey]||0)+1;
+        if(locationCount[locationKey] > 2){
+          warnings.push(`Removed 3rd visit to same location: "${stop.location}"`);
+          return false;
+        }
+        seenTypes.add(typeKey);
+      }
+
+      seenNames.add(nameKey);
+      return true;
+    });
+
+    // Re-number stops after filtering
+    plan.stops = plan.stops.map((s, i) => ({...s, order: i+1}));
+
+    if(warnings.length > 0) plan._warnings = warnings;
+    if(plannerTrailMode){ plan._isTrail = true; plan._trailFood = trailFood; }
+
     renderPlan(plan);
   } catch(err){
     output.innerHTML=`<div class="ai-error">⚠️ Couldn't generate plan: ${err.message}.<br>Make sure you have entries in the food bank first!</div>`;
@@ -788,6 +1010,7 @@ function renderPlan(plan){
           <div>
             <div class="plan-title">${plan.title}</div>
             <div class="plan-subtitle">${plan.tagline}</div>
+            ${plan._isTrail?`<div style="display:inline-block;margin-top:6px;padding:3px 12px;background:var(--gold);color:var(--dark);font-size:11px;font-weight:700;letter-spacing:2px;border-radius:20px;">🗺️ FOOD TRAIL — ${plan._trailFood}</div>`:''}
           </div>
           <button class="btn-export-img" onclick="exportPlanImage()">📸 Save as Image</button>
         </div>
@@ -795,6 +1018,7 @@ function renderPlan(plan){
         <div style="margin-top:20px;padding:14px 18px;background:#fff8f0;border-left:3px solid var(--gold);font-size:14px;color:var(--mid);font-style:italic;line-height:1.6;">
           ${plan.closingNote}
         </div>
+        ${plan._warnings?.length ? `<div style="margin-top:12px;padding:10px 18px;background:#fff3cd;border-left:3px solid #f59e0b;font-size:12px;color:#856404;line-height:1.6;">⚠️ ${plan._warnings.join(' · ')}</div>` : ''}
       </div>
       <div class="plan-summary">
         <div class="plan-sum-item">🍽️ <strong>${plan.stops.length} stops</strong></div>
@@ -826,21 +1050,15 @@ async function exportPlanImage(){
 
 // ── DATE PLANNER END ──
 
-// Seed demo data so backend isn't empty on first open
-(function seedDemo(){
-  const ex=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
-  if(ex.length>0)return;
-  const demos=[
-    {id:1,name:"Tian Tian Chicken Rice",type:"Chicken Rice",location:"Maxwell Food Centre",price:"$3 – $5",mapLink:"",notes:"Queue early, worth every minute. Get the drumstick.",rating:5,dateWorthy:true,timestamp:"2026-03-01T08:00:00Z"},
-    {id:2,name:"Tian Tian Chicken Rice",type:"Chicken Rice",location:"Maxwell Food Centre",price:"$3 – $5",mapLink:"",notes:"Classic. The chili is the real star.",rating:4,dateWorthy:true,timestamp:"2026-03-05T10:00:00Z"},
-    {id:3,name:"Hill Street Char Kway Teow",type:"Char Kway Teow",location:"Bedok Interchange Hawker Centre",price:"$3 – $5",mapLink:"",notes:"Wok hei is insane. Order the large portion.",rating:5,dateWorthy:false,timestamp:"2026-03-02T12:00:00Z"},
-    {id:4,name:"328 Katong Laksa",type:"Laksa",location:"East Coast Road",price:"$5 – $8",mapLink:"",notes:"Spoon only, no chopsticks. Rich coconut broth.",rating:5,dateWorthy:true,timestamp:"2026-03-03T09:00:00Z"},
-    {id:5,name:"Amoy Street Lor Mee",type:"Other",location:"Amoy Street Food Centre",price:"Under $3",mapLink:"",notes:"Thick gravy, crispy fish. Hidden gem on Level 2.",rating:4,dateWorthy:false,timestamp:"2026-03-04T11:00:00Z"},
-  ];
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(demos));
+// ── INIT ──
+// Check Supabase config is set before starting
+(function checkConfig(){
+  if(SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_KEY === 'YOUR_SUPABASE_ANON_KEY'){
+    console.warn('⚠️ Supabase not configured — open this file in Cursor and replace YOUR_SUPABASE_URL and YOUR_SUPABASE_ANON_KEY');
+  }
 })();
 
-// Init — always start on landing page
+// Always start on landing page
 goTo('landing');
 </script>
 </body>
