@@ -449,7 +449,7 @@ body{background:var(--cream);color:var(--dark);font-family:'DM Sans',sans-serif;
 // Replace these two values in Cursor with your real Supabase credentials
 const SUPABASE_URL  = 'https://oksdhjuejphcukclltps.supabase.co'
 const SUPABASE_KEY  = 'sb_publishable_rIBK-A2D0E4JBwLKn9KNSQ_A0nC7wCa'
-
+const TABLE = 'recommendations';
 // Thin Supabase REST helper — no SDK needed
 async function sbSelect(){
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${TABLE}?select=*&order=timestamp.desc`,{
